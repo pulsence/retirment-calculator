@@ -255,7 +255,7 @@ function calc(e){
         investmentRentContributions = 0;
         investmentFifteenYrContributions = 0;
         investmentThirtyYrContributions = 0;
-        if (generalInformation.currentAge + i < generalInformation.retirmentAge) {
+        if (generalInformation.currentAge + i < generalInformation.retirementAge) {
             investmentRentContributions = investingInformation.monthlyInvestmentContribution * 12;
             investmentFifteenYrContributions = investingInformation.monthlyInvestmentContribution * 12;
             investmentThirtyYrContributions = investingInformation.monthlyInvestmentContribution * 12;
@@ -290,7 +290,7 @@ function calc(e){
 
 
         // Calculate the monthly use of investment funds
-        if (generalInformation.currentAge + i >= generalInformation.retirmentAge) {
+        if (generalInformation.currentAge + i >= generalInformation.retirementAge) {
             rentUse = Math.max(0, monthCostData[i+1][1] - generalInformation.monthlySocialSecurity - generalInformation.otherMonthlyRetirementSources);
             fifteenYrUse = Math.max(0, monthCostData[i+1][2] - generalInformation.monthlySocialSecurity - generalInformation.otherMonthlyRetirementSources);
             thirtyYrUse = Math.max(0, monthCostData[i+1][3] - generalInformation.monthlySocialSecurity - generalInformation.otherMonthlyRetirementSources);
@@ -336,7 +336,7 @@ function calc(e){
 function readForm(){
     generalInformation = {};
     generalInformation.currentAge = Number(document.getElementById("currentAge").value);
-    generalInformation.retirmentAge =  Number(document.getElementById("retirmentAge").value);
+    generalInformation.retirementAge =  Number(document.getElementById("retirementAge").value);
     generalInformation.deathAge =  Number(document.getElementById("deathAge").value);
     generalInformation.averageInflation =  Number(document.getElementById("averageInflation").value) / 100;
     generalInformation.monthlySocialSecurity =  Number(document.getElementById("monthlySocialSecurity").value);
