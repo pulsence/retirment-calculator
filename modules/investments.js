@@ -69,17 +69,16 @@ class NonTaxableInvestment extends GenericInvestment {
                 if (i < (this.generalInformation.retirementAge - this.generalInformation.startAge)) {
                     currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + this.monthlyContribution * 12) * (1 + this.annualRate);
                     values.push(currentValue);
-                    continue;
+                } else {
+                    var uncoveredLivingCosts = housingCosts[j].housingData[i].yearlyCosts +
+                                                livingExpenses.expensesData[i].yearlySpending  -
+                                                this.generalInformation.socialSecurity * 12 - 
+                                                this.generalInformation.otherRetirementIncome * 12;
+                    var withdrawls = (uncoveredLivingCosts > 0 ? -uncoveredLivingCosts : 0);
+                    
+                    currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + withdrawls) * (1 + this.annualRate);
+                    values.push(currentValue);
                 }
-
-                var uncoveredLivingCosts = housingCosts[j].housingData[i].yearlyCosts +
-                                            livingExpenses.expensesData[i].yearlySpending  -
-                                            this.generalInformation.socialSecurity * 12 - 
-                                            this.generalInformation.otherRetirementIncome * 12;
-                var withdrawls = (uncoveredLivingCosts > 0 ? -uncoveredLivingCosts : 0);
-                
-                currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + withdrawls) * (1 + this.annualRate);
-                values.push(currentValue);
             }
             this.investmentData.push(new InvestmentYear(this.generalInformation.startAge + i, values));
         }

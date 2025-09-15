@@ -98,6 +98,20 @@ function readForm(form) {
     return new FormInformation(generalInformation, rentingInformation, buyingInformation, investingInformation);
 }
 
+function calculateTotalCosts(housing, livingExpenses) {
+    var years = housing[0].housingData.length;
+    var totalCosts = [];
+
+    for (var i = 0; i < years; i++) {
+        var values = [];
+        for (var j = 0; j < housing.length; j++) {
+            values.push(housing[j].housingData[i].totalCosts + livingExpenses.expensesData[i].totalCosts);
+        }
+        totalCosts.push([housing[0].housingData[i].age, values]);
+    }
+    return totalCosts;
+}
+
 function calculateCumulativeAssets(investments, housing) {
     var years = investments[0].investmentData.length;
     var cumulativeAssets = [];

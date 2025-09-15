@@ -60,6 +60,7 @@ function calc(e){
                                             investingInformation.monthlyInvestmentContribution);
     investments.calculateData([rental, house15, house30], livingExpenses);
     
+    var totalCosts = calculateTotalCosts([rental, house15, house30], livingExpenses);
     var assetValues = calculateCumulativeAssets([investments], [rental, house15, house30]);
     var netValues = calculateNetPositions(assetValues, [rental, house15, house30], livingExpenses);
 
@@ -67,7 +68,7 @@ function calc(e){
                     comparativeTotalCostsTable, perMonthCostsTable,
                     perMonthInvestmentUseTable, investmentValueTable, comparativeAssetValuesTable, netPositionsTable);
     
-    drawTotalCosts([rental, house15, house30]);
+    drawTotalCosts(totalCosts);
 
     drawAssetValues(assetValues);
 
@@ -76,7 +77,7 @@ function calc(e){
     return;
 }
 
-function drawTotalCosts(housing){
+function drawTotalCosts(totalCosts){
     // Declare the chart dimensions and margins.
     const width = 640;
     const height = 400;
@@ -85,19 +86,21 @@ function drawTotalCosts(housing){
     const marginBottom = 30;
     const marginLeft = 75;
 
-    const years = housing[0].housingData.length;
-    min = Math.floor(Math.min(housing[0].housingData[0].totalCosts,
-                                housing[1].housingData[0].totalCosts,
-                                housing[2].housingData[0].totalCosts));
-    max = Math.ceil(Math.max(housing[0].housingData[years - 1].totalCosts,
-                                housing[1].housingData[years - 1].totalCosts,
-                                housing[1].housingData[years - 1].totalCosts) * 1.10);
+    const years = totalCosts.length;
+    var min = Number.MAX_SAFE_INTEGER;
+    var max = Number.MIN_SAFE_INTEGER;
+    for (i = 0; i < totalCosts.length; i++) {
+        min = Math.min(...totalCosts[i][1], min);
+        max = Math.max(...totalCosts[i][1], max);
+    }
+
+    max = Math.ceil(max * 1.10);
+    min = Math.floor(min);
 
     // Declare the x (horizontal position) scale.
     const x = d3.scaleLinear()
-        .domain([housing[0].housingData[0].age, housing[0].housingData[years - 1].age])
+        .domain([totalCosts[0][0], totalCosts[years - 1][0]])
         .range([marginLeft, width - marginRight]);
-
 
     // Declare the y (vertical position) scale.
     const y = d3.scaleLinear()
@@ -105,16 +108,16 @@ function drawTotalCosts(housing){
         .range([height - marginBottom, marginTop]);
 
     const rentLine = d3.line()
-        .x(d => x(d.age))
-        .y(d => y(d.totalCosts));
+        .x(d => x(d[0]))
+        .y(d => y(d[1][0]));
 
     const fiftenYearLine = d3.line()
-        .x(d => x(d.age))
-        .y(d => y(d.totalCosts));
+        .x(d => x(d[0]))
+        .y(d => y(d[1][1]));
         
     const thirtyYearLine = d3.line()
-        .x(d => x(d.age))
-        .y(d => y(d.totalCosts));
+        .x(d => x(d[0]))
+        .y(d => y(d[1][2]));
 
     // Create the SVG container.
     const svg = d3.create("svg")
@@ -143,25 +146,25 @@ function drawTotalCosts(housing){
         .attr("fill", "none")
         .attr("stroke", "steelblue")
         .attr("stroke-width", 1.5)
-        .attr("d", rentLine(housing[0].housingData));
+        .attr("d", rentLine(totalCosts));
 
     // Append a path for the line.
     svg.append("path")
         .attr("fill", "none")
         .attr("stroke", "maroon")
         .attr("stroke-width", 1.5)
-        .attr("d", fiftenYearLine(housing[1].housingData));
+        .attr("d", fiftenYearLine(totalCosts));
 
     // Append a path for the line.
     svg.append("path")
         .attr("fill", "none")
         .attr("stroke", "green")
         .attr("stroke-width", 1.5)
-        .attr("d", thirtyYearLine(housing[2].housingData));
+        .attr("d", thirtyYearLine(totalCosts));
 
     // Append text for rent
     svg.append("text")
-        .attr("transform", "translate(" + (width - marginRight + 3) + "," + y (housing[0].housingData[years - 1].totalCosts) + ")")
+        .attr("transform", "translate(" + (width - marginRight + 3) + "," + y (totalCosts[years - 1][1][0]) + ")")
         .attr("dy", ".35em")
         .attr("text-anchor", "start")
         .style("fill", "steelblue")
@@ -169,7 +172,7 @@ function drawTotalCosts(housing){
 
     // Append text for 15 yr
     svg.append("text")
-        .attr("transform", "translate(" + (width - marginRight + 3) + "," + y (housing[1].housingData[years - 1].totalCosts) + ")")
+        .attr("transform", "translate(" + (width - marginRight + 3) + "," + y (totalCosts[years - 1][1][1]) + ")")
         .attr("dy", ".35em")
         .attr("text-anchor", "start")
         .style("fill", "maroon")
@@ -177,7 +180,7 @@ function drawTotalCosts(housing){
 
     // Append text for 30 yr
     svg.append("text")
-        .attr("transform", "translate(" + (width - marginRight + 3) + "," + y (housing[2].housingData[years - 1].totalCosts) + ")")
+        .attr("transform", "translate(" + (width - marginRight + 3) + "," + y (totalCosts[years - 1][1][2]) + ")")
         .attr("dy", ".35em")
         .attr("text-anchor", "start")
         .style("fill", "green")
