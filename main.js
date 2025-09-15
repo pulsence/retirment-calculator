@@ -1,47 +1,16 @@
-comparativeTotalCostsTable = null
-perMonthCostsTable = null
-perMonthInvestmentUseTable = null
-comparativeAssetValuesTable = null
-netPositionsTable = null
-form = null
+comparativeTotalCostsTable = null;
+perMonthCostsTable = null;
+perMonthInvestmentUseTable = null;
+investmentValueTable = null;
+comparativeAssetValuesTable = null;
+netPositionsTable = null;
+form = null;
 
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   trailingZeroDisplay: 'stripIfInteger'
 });
-
-generalInformation = {};
-rentingInformation = {};
-buyingInformation = {};
-investingInformation = {};
-
-
-class AssetValues {
-    age = 0;
-
-    fifteenYrHomeValue = 0;
-    thirtyYrHomeValue = 0;
-
-    fifteenYrInvestments = 0;
-    thirtyYrInvestments = 0;
-    apartmentInvestments = 0;
-
-    constructor(){
-    }
-
-    get apartmentTotal() {
-        return this.apartmentInvestments;
-    }
-
-    get fifteenYrTotal() {
-        return this.fifteenYrHomeValue + this.fifteenYrInvestments;
-    }
-
-    get thirtyYrTotal() {
-        return this.thirtyYrHomeValue + this.thirtyYrInvestments;
-    }
-}
 
 window.onload = function() {
     form = document.querySelector("#detailsForm");
@@ -50,6 +19,7 @@ window.onload = function() {
     comparativeTotalCostsTable = document.querySelector("#comparativeTotalCostsTable").getElementsByTagName("tbody")[0];
     perMonthCostsTable = document.querySelector("#perMonthCostsTable").getElementsByTagName("tbody")[0];
     perMonthInvestmentUseTable = document.querySelector("#perMonthInvestmentUseTable").getElementsByTagName("tbody")[0];
+    investmentValueTable = document.querySelector("#investmentValueTable").getElementsByTagName("tbody")[0];
     comparativeAssetValuesTable = document.querySelector("#comparativeAssetValuesTable").getElementsByTagName("tbody")[0];
     netPositionsTable = document.querySelector("#netPositionsTable").getElementsByTagName("tbody")[0];
 }
@@ -82,17 +52,20 @@ function calc(e){
                         buyingInformation.annualHomeMaintance);
     house30.calculateData();
 
+    livingExpenses = new LivingExpenses(generalInformation);
+    livingExpenses.calculateData();
+
     investments = new NonTaxableInvestment(generalInformation, investingInformation.totalCurrentInvesments,
                                             investingInformation.annualInvestmentAppreciation,
                                             investingInformation.monthlyInvestmentContribution);
-    investments.calculateData([rental, house15, house30]);
+    investments.calculateData([rental, house15, house30], livingExpenses);
     
     var assetValues = calculateCumulativeAssets([investments], [rental, house15, house30]);
-    var netValues = calculateNetPositions(assetValues, [rental, house15, house30]);
+    var netValues = calculateNetPositions(assetValues, [rental, house15, house30], livingExpenses);
 
-    updateTables([investments], [rental, house15, house30], assetValues, netValues,
+    updateTables([investments], [rental, house15, house30], livingExpenses, assetValues, netValues,
                     comparativeTotalCostsTable, perMonthCostsTable,
-                    perMonthInvestmentUseTable, comparativeAssetValuesTable, netPositionsTable);
+                    perMonthInvestmentUseTable, investmentValueTable, comparativeAssetValuesTable, netPositionsTable);
     
     drawTotalCosts([rental, house15, house30]);
 

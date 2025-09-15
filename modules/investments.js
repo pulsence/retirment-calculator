@@ -9,7 +9,7 @@ class GenericInvestment {
         this.investmentData = [];
     }
 
-    calculateData(costs) {
+    calculateData(housingCcosts, livingExpenses) {
         throw new Error("Method 'calculateData()' must be implemented.");
     }
 }
@@ -28,26 +28,25 @@ class TaxableInvestment extends GenericInvestment {
         this.taxRate = taxRate;
     }
 
-    calculateData(costs) {
+    calculateData(housingCosts, livingExpenses) {
         var years = this.generalInformation.lifeExpectancy - this.generalInformation.startAge;
         var currentValue = this.amount;
 
         for (var i = 0; i < years; i++) {
             var values = []
-            for (var j = 0; j < costs.length; j++){
+            for (var j = 0; j < housingCosts.length; j++){
                 if (i < (this.generalInformation.retirementAge - this.generalInformation.startAge)) {
                     currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + this.monthlyContribution * 12) * (1 + this.annualRate);
                     values.push(currentValue);
-                    continue;
+                } else {
+                    var uncoveredLivingCosts = housingCosts[j].housingData[i].yearlyCosts +
+                                                livingExpenses.expensesData[i].yearlySpending -
+                                                this.generalInformation.socialSecurity * 12 - 
+                                                this.generalInformation.otherRetirementIncome * 12;
+                    var withdrawls = (uncoveredLivingCosts > 0 ? -uncoveredLivingCosts * (1 + this.taxRate) : 0);
+                    currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + withdrawls) * (1 + this.annualRate);
+                    values.push(currentValue);
                 }
-
-                var uncoveredLivingCosts = costs[j].housingData[i].yearlyCosts + 
-                                            this.generalInformation.monthlyRetirementSpending * 12 -
-                                            this.generalInformation.socialSecurity - 
-                                            this.generalInformation.otherRetirementIncome;
-                var contributions = this.monthlyContribution * 12 - (uncoveredLivingCosts < 0 ? uncoveredLivingCosts : 0);
-                currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + contributions) * (1 + this.annualRate);
-                values.push(currentValue);
             }
             this.investmentData.push(new InvestmentYear(this.generalInformation.startAge + i, values));
         }
@@ -60,25 +59,26 @@ class NonTaxableInvestment extends GenericInvestment {
         super(generalInformation, amount, annualRate, monthlyContribution);
     }
 
-    calculateData(costs) {
+    calculateData(housingCosts, livingExpenses) {
         var years = this.generalInformation.lifeExpectancy - this.generalInformation.startAge;
         var currentValue = this.amount;
 
         for (var i = 0; i < years; i++) {
             var values = []
-            for (var j = 0; j < costs.length; j++){
+            for (var j = 0; j < housingCosts.length; j++){
                 if (i < (this.generalInformation.retirementAge - this.generalInformation.startAge)) {
                     currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + this.monthlyContribution * 12) * (1 + this.annualRate);
                     values.push(currentValue);
                     continue;
                 }
 
-                var uncoveredLivingCosts = costs[j].housingData[i].yearlyCosts + 
-                                            this.generalInformation.monthlyRetirementSpending * 12 -
-                                            this.generalInformation.socialSecurity - 
-                                            this.generalInformation.otherRetirementIncome;
-                var contributions = this.monthlyContribution * 12 - (uncoveredLivingCosts < 0 ? uncoveredLivingCosts : 0);
-                currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + contributions) * (1 + this.annualRate);
+                var uncoveredLivingCosts = housingCosts[j].housingData[i].yearlyCosts +
+                                            livingExpenses.expensesData[i].yearlySpending  -
+                                            this.generalInformation.socialSecurity * 12 - 
+                                            this.generalInformation.otherRetirementIncome * 12;
+                var withdrawls = (uncoveredLivingCosts > 0 ? -uncoveredLivingCosts : 0);
+                
+                currentValue = ((i == 0 ? this.amount : this.investmentData[i - 1].value[j]) + withdrawls) * (1 + this.annualRate);
                 values.push(currentValue);
             }
             this.investmentData.push(new InvestmentYear(this.generalInformation.startAge + i, values));

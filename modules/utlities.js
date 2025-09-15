@@ -1,7 +1,8 @@
 class GeneralInformation {
 
     constructor(startAge = 0, retirementAge = 0, lifeExpectancy = 0, inflation = 0,
-                socialSecurity = 0, otherRetirementIncome = 0, monthlySpending = 0) {
+                socialSecurity = 0, otherRetirementIncome = 0, monthlySpending = 0,
+                retirementMonthlySpending = 0) {
         this.startAge = startAge;
         this.retirementAge = retirementAge;
         this.lifeExpectancy = lifeExpectancy;
@@ -10,6 +11,7 @@ class GeneralInformation {
         this.socialSecurity = socialSecurity;
         this.otherRetirementIncome = otherRetirementIncome;
         this.monthlySpending = monthlySpending;
+        this.retirementMonthlySpending = retirementMonthlySpending;
     }
 }
 
@@ -68,6 +70,8 @@ function readForm(form) {
     generalInformation.inflation =  Number(document.getElementById("averageInflation").value) / 100;
     generalInformation.socialSecurity =  Number(document.getElementById("monthlySocialSecurity").value);
     generalInformation.otherRetirementIncome =  Number(document.getElementById("otherMonthlyRetirementSources").value);
+    generalInformation.monthlySpending =  Number(document.getElementById("currentMonthlySpending").value);
+    generalInformation.retirementMonthlySpending =  Number(document.getElementById("expectedMonthlySpendingInRetirement").value);
 
     var rentingInformation = new RentingInformation();
     rentingInformation.monthlyRent = Number(document.getElementById("monthlyRent").value);
@@ -112,41 +116,52 @@ function calculateCumulativeAssets(investments, housing) {
     return cumulativeAssets;
 }
 
-function calculateNetPositions(cumulativeAssets, housing) {
+function calculateNetPositions(cumulativeAssets, housing, livingExpenses) {
     var years = cumulativeAssets.length;
     var netPositions = [];
 
     for (var i = 0; i < years; i++) {
         var values = [];
         for (var j = 0; j < cumulativeAssets[i][1].length; j++) {
-            values.push(cumulativeAssets[i][1][j] - housing[j].housingData[i].totalCosts);
+            values.push(cumulativeAssets[i][1][j] - 
+                            housing[j].housingData[i].totalCosts - 
+                            livingExpenses.expensesData[i].totalCosts);
         }
         netPositions.push([cumulativeAssets[i][0], values]);
     }
     return netPositions;
 }
 
-function updateTables(investments, housing, assetValues, netValues,
+function updateTables(investments, housing, livingExpenses, assetValues, netValues,
                         totalCostsTable, perMonthCostsTable,
-                        perMonthInvestmentUseTable, cumulativeAssetsTable, netPositionsTable) {
+                        perMonthInvestmentUseTable, investmentValueTable,
+                        cumulativeAssetsTable, netPositionsTable) {
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
         trailingZeroDisplay: 'stripIfInteger'
     });
     
-    totalCostsTable.innerHtml = "";
-    perMonthCostsTable.innerHtml = "";
-    perMonthInvestmentUseTable.innerHtml = "";
-    cumulativeAssetsTable.innerHtml = "";
-    netPositionsTable.innerHtml = "";
+    totalCostsTable.innerHTML = "";
+    perMonthCostsTable.innerHTML = "";
+    perMonthInvestmentUseTable.innerHTML = "";
+    investmentValueTable.innerHTML = "";
+    cumulativeAssetsTable.innerHTML = "";
+    netPositionsTable.innerHTML = "";
 
     // Total Costs Table
     for (var i = 0; i < housing[0].housingData.length; i++) {
         var row = totalCostsTable.insertRow();
         row.insertCell(0).innerText = housing[0].housingData[i].age;
         for (var j = 0; j < housing.length; j++) {
-            row.insertCell(j + 1).innerText = formatter.format(housing[j].housingData[i].totalCosts);
+            var cell = row.insertCell(j + 1);
+            cell.innerText = formatter.format(housing[j].housingData[i].totalCosts + 
+                                                                livingExpenses.expensesData[i].totalCosts);
+                                                                
+            if (housing[j] instanceof House &&
+                 i + 1 == housing[j].mortgageTermYears) {
+                cell.classList.add("fw-bold");
+            }
         }
     }
 
@@ -155,7 +170,9 @@ function updateTables(investments, housing, assetValues, netValues,
         var row = perMonthCostsTable.insertRow();
         row.insertCell(0).innerText = housing[0].housingData[i].age;
         for (var j = 0; j < housing.length; j++) {
-            row.insertCell(j + 1).innerText = formatter.format(housing[j].housingData[i].yearlyCosts / 12);
+            var cell = row.insertCell(j + 1);
+            cell.innerText = formatter.format(housing[j].housingData[i].yearlyCosts / 12 +
+                                                livingExpenses.expensesData[i].yearlySpending / 12);
         }
     }
 
@@ -170,18 +187,36 @@ function updateTables(investments, housing, assetValues, netValues,
                 continue;
             }
 
-            var investmentUse = (housing[j].housingData[i].yearlyCosts / 12) - 
+            var investmentUse = (housing[j].housingData[i].yearlyCosts / 12)  +
+                                    livingExpenses.expensesData[i].yearlySpending / 12 - 
                                     generalInformation.socialSecurity - generalInformation.otherRetirementIncome;
             row.insertCell(j + 1).innerText = formatter.format(investmentUse > 0 ? investmentUse : 0);
         }
     }
     
+    // Investment Values Table
+    for (var i = 0; i < investments[0].investmentData.length; i++) {
+        var row = investmentValueTable.insertRow();
+        row.insertCell(0).innerText = investments[0].investmentData[i].age;
+        for (var j = 0; j < investments[0].investmentData[i].value.length; j++) {
+            var cell = row.insertCell(j + 1);
+            cell.innerText = formatter.format(investments[0].investmentData[i].value[j]);
+            if (investments[0].investmentData[i].value[j] < 0) {
+                cell.classList.add("text-danger");
+            }
+        }
+    }
+
     // Cumulative Assets Table
     for (var i = 0; i < assetValues.length; i++) {
         var row = cumulativeAssetsTable.insertRow();
         row.insertCell(0).innerText = assetValues[i][0];
         for (var j = 0; j < assetValues[i][1].length; j++) {
-            row.insertCell(j + 1).innerText = formatter.format(assetValues[i][1][j]);
+            var cell = row.insertCell(j + 1);
+            cell.innerText = formatter.format(assetValues[i][1][j]);
+            if (assetValues[i][1][j] < 0) {
+                cell.classList.add("text-danger");
+            }
         }
     }
 
@@ -190,7 +225,11 @@ function updateTables(investments, housing, assetValues, netValues,
         var row = netPositionsTable.insertRow();
         row.insertCell(0).innerText = netValues[i][0];
         for (var j = 0; j < netValues[i][1].length; j++) {
-            row.insertCell(j + 1).innerText = formatter.format(netValues[i][1][j]);
+            var cell = row.insertCell(j + 1);
+            cell.innerText = formatter.format(netValues[i][1][j]);
+            if (netValues[i][1][j] < 0) {
+                cell.classList.add("text-danger");
+            }
         }
     }
 }

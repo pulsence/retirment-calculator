@@ -45,31 +45,32 @@ class House extends GenericHousing {
         var yearlyMortgagePayment = monthlyMortgagePayment * 12;
         var yearlyInterest = (monthlyMortgagePayment * this.mortgageTermYears * 12 - this.mortgage) / this.mortgageTermYears;
         var yearlyPrincipal = yearlyMortgagePayment - yearlyInterest;
+
         var yearlyCosts = 0;
 
         for (var i = 0; i < years; i++) {
+            yearlyCosts = this.monthlyInsurance * 12 + this.monthlyHOA * 12 + this.propertyTaxAssessment;
+
             if (i < this.mortgageTermYears) {
                 currentValue = (currentValue + yearlyPrincipal) * (1 + this.homeAppreciationRate);
-                yearlyCosts = yearlyMortgagePayment + this.annualMaintenanceCost + this.monthlyInsurance * 12 + 
-                                this.monthlyHOA * 12 + this.propertyTaxAssessment + this.generalInformation.monthlySpending * 12;
+                yearlyCosts += yearlyMortgagePayment;
             } else {
                 currentValue = currentValue * (1 + this.homeAppreciationRate);
-                yearlyCosts = this.annualMaintenanceCost + this.monthlyInsurance * 12 +
-                                this.monthlyHOA * 12 + this.propertyTaxAssessment + this.generalInformation.monthlySpending * 12;
             }
 
-            if (i === 0) {
+            if (i == 0) {
                 yearlyCosts += this.oneTimeImprovements;
+            } else {
+                yearlyCosts += this.annualMaintenanceCost;
             }
 
             this.housingData.push(new HousingYear(this.generalInformation.startAge + i, currentValue,
-                                                    yearlyCosts, (i === 0 ? yearlyCosts : this.housingData[i - 1].totalCosts + yearlyCosts)));
+                                                    yearlyCosts, (i == 0 ? yearlyCosts : this.housingData[i - 1].totalCosts + yearlyCosts)));
             
             this.annualMaintenanceCost *= (1 + this.generalInformation.inflation);
             this.propertyTaxAssessment *= (1 + this.generalInformation.inflation);
             this.monthlyInsurance *= (1 + this.generalInformation.inflation);
             this.monthlyHOA *= (1 + this.generalInformation.inflation);
-            this.generalInformation.monthlySpending *= (1 + this.generalInformation.inflation);
         }
     }
 }
@@ -86,17 +87,17 @@ class Apartment extends GenericHousing {
     calculateData() {
         var years = this.generalInformation.lifeExpectancy - this.generalInformation.startAge;
         var currentRent = this.monthlyRent;
+
         var yearlyCosts = 0;
 
         for (var i = 0; i < years; i++) {
-            yearlyCosts = currentRent * 12 + this.monthlyInsurance * 12 + this.monthlyHOA * 12 +
-                            this.generalInformation.monthlySpending * 12;
+            yearlyCosts = currentRent * 12 + this.monthlyInsurance * 12 + this.monthlyHOA * 12;
+
             this.housingData.push(new HousingYear(this.generalInformation.startAge + i, 0,
-                                                    yearlyCosts, (i === 0 ? yearlyCosts : this.housingData[i - 1].totalCosts + yearlyCosts)));
+                                                    yearlyCosts, (i == 0 ? yearlyCosts : this.housingData[i - 1].totalCosts + yearlyCosts)));
             currentRent = currentRent * (1 + this.annualRentIncrease);
             this.monthlyInsurance *= (1 + this.generalInformation.inflation);
             this.monthlyHOA *= (1 + this.generalInformation.inflation);
-            this.generalInformation.monthlySpending *= (1 + this.generalInformation.inflation);
         }
     }
 }
